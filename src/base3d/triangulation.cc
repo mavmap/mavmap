@@ -113,7 +113,7 @@ triangulate_points(const Eigen::Matrix<double, 3, 4>& proj_matrix1,
 std::vector<double>
 calc_triangulation_angles(const Eigen::Matrix<double, 3, 4> proj_matrix1,
                           const Eigen::Matrix<double, 3, 4> proj_matrix2,
-                          const std::vector<Eigen::Vector3d> points) {
+                          std::vector<Eigen::Vector3d> points) {
 
   const Eigen::Matrix<double, 3, 4> inv_proj_matrix1
     = invert_proj_matrix(proj_matrix1);
@@ -126,22 +126,27 @@ calc_triangulation_angles(const Eigen::Matrix<double, 3, 4> proj_matrix1,
 
   // Baseline length between cameras
   const double baseline = (tvec1 - tvec2).norm();
-  const double baseline2 = baseline * baseline;
+  double baseline2 = baseline * baseline;
 
   std::vector<double> angles(points.size());
 
-  for (size_t i=0; i<points.size(); ++i) {
-    const Eigen::Vector3d& point = points[i];
+  #pragma omp parallel shared(points, angles, baseline2)
+  {
+    int i;
+    #pragma omp for schedule(static, 1)
+    for (i=0; i<points.size(); ++i) {
+      const Eigen::Vector3d& point = points[i];
 
-    // Ray lengths from cameras to point
-    const double ray1 = (point - tvec1).norm();
-    const double ray2 = (point - tvec2).norm();
+      // Ray lengths from cameras to point
+      const double ray1 = (point - tvec1).norm();
+      const double ray2 = (point - tvec2).norm();
 
-    // Angle between rays at point within the enclosing triangle,
-    // see "law of cosines"
-    angles[i] = acos((ray1 * ray1 + ray2 * ray2 - baseline2)
-                     / (2 * ray1 * ray2));
+      // Angle between rays at point within the enclosing triangle,
+      // see "law of cosines"
+      angles[i] = acos((ray1 * ray1 + ray2 * ray2 - baseline2)
+                       / (2 * ray1 * ray2));
 
+    }
   }
 
   return angles;
