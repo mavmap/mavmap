@@ -212,8 +212,8 @@ double pose_refinement(Eigen::Vector3d& rvec,
   options.minimizer_progress_to_stdout = print_progress;
 
 #ifdef OPENMP_FOUND
-  options.num_threads = omp_get_num_threads();
-  options.num_linear_solver_threads = omp_get_num_threads();
+  options.num_threads = omp_get_max_threads();
+  options.num_linear_solver_threads = omp_get_max_threads();
 #endif
 
   ceres::Solver::Summary summary;
@@ -559,8 +559,8 @@ double bundle_adjustment(
   options.minimizer_progress_to_stdout = print_progress;
 
 #ifdef OPENMP_FOUND
-  options.num_threads = omp_get_num_threads();
-  options.num_linear_solver_threads = omp_get_num_threads();
+  options.num_threads = omp_get_max_threads();
+  options.num_linear_solver_threads = omp_get_max_threads();
 #endif
 
   ceres::Solver::Summary summary;
