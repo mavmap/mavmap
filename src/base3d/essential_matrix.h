@@ -31,7 +31,6 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include <Eigen/SVD>
-#include <Eigen/Geometry>
 
 #include "base3d/projection.h"
 #include "base3d/triangulation.h"

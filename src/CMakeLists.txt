@@ -26,6 +26,7 @@ TARGET_LINK_LIBRARIES(mapper
     essential_matrix
     p3p
     projection
+    projective_transform
     triangulation
     similarity_transform
     feature_management

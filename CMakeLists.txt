@@ -14,7 +14,7 @@ FIND_PACKAGE(OpenMP)
 
 ADD_DEFINITIONS("-O3 -funroll-loops -std=c++0x")
 
-SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -pedantic -g")
+SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wno-unknown-pragmas -pedantic -g")
 
 IF(OPENMP_FOUND)
     ADD_DEFINITIONS("-DOPENMP_FOUND")

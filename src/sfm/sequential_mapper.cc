@@ -84,20 +84,45 @@ bool SequentialMapper::process_initial(const size_t first_image_idx,
   extract_image_features_(second_image_idx);
   match_image_features_();
 
-  const size_t disparity
-    = median_feature_disparity(prev_keypoints_, curr_keypoints_, matches_);
+  if (options.max_inliers_homography < 1) {
 
-  float frame_diagonal;
-  feature_cache_.query_dimensions(first_image_idx,
-                                  NULL, NULL, NULL, &frame_diagonal);
-  const double min_disparity
-    = rel2abs_threshold(options.min_disparity, frame_diagonal);
+    // Extract feature matches
+    Eigen::MatrixXd prev_matches(matches_.size(), 2);
+    Eigen::MatrixXd curr_matches(matches_.size(), 2);
+    for (size_t i=0; i<matches_.size(); ++i) {
+      cv::DMatch& match = matches_[i];
+      prev_matches.row(i) = prev_points2D_[match.queryIdx];
+      curr_matches.row(i) = curr_points2D_[match.trainIdx];
+    }
 
-  if (disparity < min_disparity) {
-    return false;
+    // Test whether there is enough view-point change between first and second
+    // image by estimating the homography and checking for the number of inliers
+
+    const size_t stop_num_inliers
+      = matches_.size() * options.max_inliers_homography;
+
+    size_t num_inliers;
+    std::vector<bool> inlier_mask;
+
+    ProjectiveTransformEstimator projective_transform_estimator;
+    Eigen::Matrix3d projective_transform
+      = RANSAC(projective_transform_estimator,
+               prev_matches,
+               curr_matches,
+               4, // min_samples
+               options.max_reproj_error, num_inliers, inlier_mask,
+               100, // max_trials
+               stop_num_inliers // stop_num_inliers
+               );
+
+    if ((double)num_inliers / inlier_mask.size()
+        > options.max_inliers_homography) {
+      return false;
+    }
+
   }
 
-  // Add cameras
+  // Get camera models
   const size_t first_camera_id = get_camera_id(first_image_idx);
   const size_t second_camera_id = get_camera_id(second_image_idx);
 
@@ -110,17 +135,6 @@ bool SequentialMapper::process_initial(const size_t first_image_idx,
 
   image_idx_to_id_[first_image_idx] = first_image_id;
   image_id_to_idx_[first_image_id] = first_image_idx;
-
-  // Extract matched features and normalized their coordinates for essential
-  // matrix estimation
-
-  Eigen::MatrixXd prev_matches_normalized(matches_.size(), 2);
-  Eigen::MatrixXd curr_matches_normalized(matches_.size(), 2);
-  for (size_t i=0; i<matches_.size(); ++i) {
-    cv::DMatch& match = matches_[i];
-    prev_matches_normalized.row(i) = prev_points2D_N_[match.queryIdx];
-    curr_matches_normalized.row(i) = curr_points2D_N_[match.trainIdx];
-  }
 
   if (debug) {
     cv::Mat image_matches;
@@ -137,8 +151,16 @@ bool SequentialMapper::process_initial(const size_t first_image_idx,
   }
 
 
-  // Find essential matrix between first and second image
+  // Extract normalized feature matches
+  Eigen::MatrixXd prev_matches_normalized(matches_.size(), 2);
+  Eigen::MatrixXd curr_matches_normalized(matches_.size(), 2);
+  for (size_t i=0; i<matches_.size(); ++i) {
+    cv::DMatch& match = matches_[i];
+    prev_matches_normalized.row(i) = prev_points2D_N_[match.queryIdx];
+    curr_matches_normalized.row(i) = curr_points2D_N_[match.trainIdx];
+  }
 
+  // Transform reprojection error to normalized unit
   const int first_camera_model_code = get_camera_model_code(first_image_idx);
   const std::vector<double>& first_camera_params
     = feature_manager.camera_params[first_camera_id];
@@ -150,6 +172,7 @@ bool SequentialMapper::process_initial(const size_t first_image_idx,
   size_t num_inliers;
   std::vector<bool> inlier_mask;
 
+  // Find essential matrix between first and second image
   EssentialMatrixEstimator essential_matrix_estimator;
   Eigen::Matrix3d essential_matrix
     = RANSAC(essential_matrix_estimator,
@@ -294,23 +317,41 @@ bool SequentialMapper::process(const size_t image_idx,
     cv::imwrite(debug_path_full, image_matches);
   }
 
-  // Check whether median feature disparity is large enough, otherwise fail
+  // Test whether there is enough view-point change between first and second
+  // image by estimating the homography and checking for the number of inliers
+  if (options.max_inliers_homography < 1) {
 
-  const double disparity
-    = median_feature_disparity(prev_keypoints_, curr_keypoints_, matches_);
-
-  float frame_diagonal;
-  feature_cache_.query_dimensions(image_idx, NULL, NULL, NULL,
-                                  &frame_diagonal);
-  const double min_disparity
-    = rel2abs_threshold(options.min_disparity, frame_diagonal);
-
-  if (disparity < min_disparity) {
-    if (debug) {
-      std::cout << "DEBUG: min-disparty: " << disparity << "<"
-                << min_disparity << std::endl;
+    // Extract feature matches
+    Eigen::MatrixXd prev_matches(matches_.size(), 2);
+    Eigen::MatrixXd curr_matches(matches_.size(), 2);
+    for (size_t i=0; i<matches_.size(); ++i) {
+      cv::DMatch& match = matches_[i];
+      prev_matches.row(i) = prev_points2D_[match.queryIdx];
+      curr_matches.row(i) = curr_points2D_[match.trainIdx];
     }
-    return false;
+
+    size_t num_inliers;
+    std::vector<bool> inlier_mask;
+
+    const size_t stop_num_inliers
+      = matches_.size() * options.max_inliers_homography;
+
+    ProjectiveTransformEstimator projective_transform_estimator;
+    Eigen::Matrix3d projective_transform
+      = RANSAC(projective_transform_estimator,
+               prev_matches,
+               curr_matches,
+               4, // min_samples
+               options.max_reproj_error, num_inliers, inlier_mask,
+               100, // max_trials
+               stop_num_inliers // stop_num_inliers
+               );
+
+    if ((double)num_inliers / inlier_mask.size()
+        > options.max_inliers_homography) {
+      return false;
+    }
+
   }
 
   // All correspondences
@@ -436,14 +477,15 @@ bool SequentialMapper::process(const size_t image_idx,
                                          camera_model_code,
                                          camera_params.data());
 
-  std::vector<bool> inlier_mask;
-  size_t num_inliers;
   Eigen::Matrix<double, 3, 4> proj_matrix;
 
   // Minimum number of inliers which must be found before RANSAC stops
   const size_t min_inliers_stop
     = rel2abs_threshold(options.ransac_min_inlier_stop,
                         tri_points3D_stable.size());
+
+  size_t num_inliers;
+  std::vector<bool> inlier_mask;
 
   try {
 

@@ -42,6 +42,7 @@
 #include "base3d/essential_matrix.h"
 #include "base3d/p3p.h"
 #include "base3d/projection.h"
+#include "base3d/projective_transform.h"
 #include "base3d/similarity_transform.h"
 #include "base3d/triangulation.h"
 #include "fm/feature_management.h"
@@ -66,12 +67,12 @@
 struct SequentialMapperOptions {
 
   /**
-   * Minimum feature disparity in pixels required for successful processing.
+   * Maximum allowed relative number of inliers for homography between two
+   * consecutive images.
    *
-   * Relative value [0; 1) as a fraction of the image diagonal. Absolute value
-   * [1; inf) in pixels.
+   * This makes sure that two consecutive have sufficient view point change.
    */
-  double min_disparity;
+  double max_inliers_homography;
 
   /**
    * Maximum final cost of pose refinement in `process` required successful
@@ -117,7 +118,7 @@ struct SequentialMapperOptions {
    */
   size_t min_track_len;
 
-  SequentialMapperOptions() : min_disparity(0),
+  SequentialMapperOptions() : max_inliers_homography(0.7),
                               final_cost_threshold(1),
                               loss_scale_factor(1),
                               ransac_min_inlier_stop(0.6),
@@ -239,7 +240,7 @@ public:
    * sparse 3D point cloud) is saved in the `feature_manager`.
    *
    * Uses the following options:
-   *    - `min_disparity`: Make sure image pair has large enough disparity
+   *    - `max_inliers_homography`: Make sure image pair has large enough disparity
    *      for reliable initial pose estimation, otherwise return `false`.
    *    - `max_reproj_error`: Classify as inliers and outliers in RANSAC
    *      essential matrix estimation. Decide which 3D points are used for
@@ -270,7 +271,7 @@ public:
    * sparse 3D point cloud) is saved in the `feature_manager`.
    *
    * Uses the following options:
-   *    - `min_disparity`: Make sure image pair has large enough disparity
+   *    - `max_inliers_homography`: Make sure image pair has large enough disparity
    *      for reliable pose estimation, otherwise return `false`.
    *    - `max_reproj_error`: Classify as inliers and outliers in RANSAC
    *      2D-3D pose estimation in case the image has already been processed.

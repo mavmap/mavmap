@@ -175,7 +175,7 @@ void adjust_global_bundle(SequentialMapper& mapper,
 
   // Adjust parameters
   mapper_options.min_track_len = 2;
-  mapper_options.min_disparity = 0;
+  mapper_options.max_inliers_homography = 0;
 
   Timer timer;
   timer.start();
@@ -211,7 +211,7 @@ size_t detect_loop(SequentialMapper& mapper, const size_t image_idx,
 
   // Adjust parameters
   mapper_options.min_track_len = 2;
-  mapper_options.min_disparity = 0;
+  mapper_options.max_inliers_homography = 1;
 
   Timer timer;
 
@@ -248,7 +248,7 @@ void process_remaining_images(SequentialMapper& mapper,
 
   // Adjust parameters
   mapper_options.min_track_len = 2;
-  mapper_options.min_disparity = 0;
+  mapper_options.max_inliers_homography = 1;
 
   Timer timer;
 
@@ -553,17 +553,17 @@ int main(int argc, char* argv[]) {
       // Sequential mapper options
       //    General
       ("init-min-disparity",
-       config::value<double>(&init_mapper_options.min_disparity)
-         ->default_value(0.1, "0.1"),
-       "Minimum median feature disparity between initial image pair "
-       "as relative (<1) w.r.t. image diagonal or absolute (>1) value in "
-       "pixels.")
+       config::value<double>(&init_mapper_options.max_inliers_homography)
+         ->default_value(0.4, "0.4"),
+       "Maximum allow relative number (0-1) of inliers in homography between "
+       "two images in order to guarantee sufficient view-point change. "
+       "Larger values result in requiring larger view-point changes.")
       ("min-disparity",
-       config::value<double>(&mapper_options.min_disparity)
-         ->default_value(0.05, "0.05"),
-       "Minimum median feature disparity between subsequent image pairs in "
-       "as relative (<1) w.r.t. image diagonal or absolute (>1) value in "
-       "pixels.")
+       config::value<double>(&mapper_options.max_inliers_homography)
+         ->default_value(0.7, "0.7"),
+       "Maximum allow relative number (0-1) of inliers in homography between "
+       "two images in order to guarantee sufficient view-point change. "
+       "Larger values result in requiring larger view-point changes.")
       ("min-track-len",
        config::value<size_t>(&mapper_options.min_track_len)
          ->default_value(3),
@@ -843,7 +843,7 @@ int main(int argc, char* argv[]) {
 
           if (process_curr_prev_prev && prev_prev_image_idx != -1) {
             SequentialMapperOptions mapper_options_copy = mapper_options;
-            mapper_options_copy.min_disparity = 0;
+            mapper_options_copy.max_inliers_homography = 1;
             mapper->process(image_idx, prev_prev_image_idx,
                             mapper_options_copy);
           }
