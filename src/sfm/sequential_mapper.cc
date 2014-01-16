@@ -84,7 +84,7 @@ bool SequentialMapper::process_initial(const size_t first_image_idx,
   extract_image_features_(second_image_idx);
   match_image_features_();
 
-  if (options.max_inliers_homography < 1) {
+  if (options.max_homography_inliers < 1) {
 
     // Extract feature matches
     Eigen::MatrixXd prev_matches(matches_.size(), 2);
@@ -99,7 +99,7 @@ bool SequentialMapper::process_initial(const size_t first_image_idx,
     // image by estimating the homography and checking for the number of inliers
 
     const size_t stop_num_inliers
-      = matches_.size() * options.max_inliers_homography;
+      = matches_.size() * options.max_homography_inliers;
 
     size_t num_inliers;
     std::vector<bool> inlier_mask;
@@ -116,7 +116,7 @@ bool SequentialMapper::process_initial(const size_t first_image_idx,
                );
 
     if ((double)num_inliers / inlier_mask.size()
-        > options.max_inliers_homography) {
+        > options.max_homography_inliers) {
       return false;
     }
 
@@ -319,7 +319,7 @@ bool SequentialMapper::process(const size_t image_idx,
 
   // Test whether there is enough view-point change between first and second
   // image by estimating the homography and checking for the number of inliers
-  if (options.max_inliers_homography < 1) {
+  if (options.max_homography_inliers < 1) {
 
     // Extract feature matches
     Eigen::MatrixXd prev_matches(matches_.size(), 2);
@@ -334,7 +334,7 @@ bool SequentialMapper::process(const size_t image_idx,
     std::vector<bool> inlier_mask;
 
     const size_t stop_num_inliers
-      = matches_.size() * options.max_inliers_homography;
+      = matches_.size() * options.max_homography_inliers;
 
     ProjectiveTransformEstimator projective_transform_estimator;
     Eigen::Matrix3d projective_transform
@@ -348,7 +348,7 @@ bool SequentialMapper::process(const size_t image_idx,
                );
 
     if ((double)num_inliers / inlier_mask.size()
-        > options.max_inliers_homography) {
+        > options.max_homography_inliers) {
       return false;
     }
 

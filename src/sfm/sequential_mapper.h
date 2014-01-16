@@ -72,7 +72,7 @@ struct SequentialMapperOptions {
    *
    * This makes sure that two consecutive have sufficient view point change.
    */
-  double max_inliers_homography;
+  double max_homography_inliers;
 
   /**
    * Maximum final cost of pose refinement in `process` required successful
@@ -118,7 +118,7 @@ struct SequentialMapperOptions {
    */
   size_t min_track_len;
 
-  SequentialMapperOptions() : max_inliers_homography(0.7),
+  SequentialMapperOptions() : max_homography_inliers(0.7),
                               final_cost_threshold(1),
                               loss_scale_factor(1),
                               ransac_min_inlier_stop(0.6),
@@ -240,7 +240,7 @@ public:
    * sparse 3D point cloud) is saved in the `feature_manager`.
    *
    * Uses the following options:
-   *    - `max_inliers_homography`: Make sure image pair has large enough disparity
+   *    - `max_homography_inliers`: Make sure image pair has large enough disparity
    *      for reliable initial pose estimation, otherwise return `false`.
    *    - `max_reproj_error`: Classify as inliers and outliers in RANSAC
    *      essential matrix estimation. Decide which 3D points are used for
@@ -271,7 +271,7 @@ public:
    * sparse 3D point cloud) is saved in the `feature_manager`.
    *
    * Uses the following options:
-   *    - `max_inliers_homography`: Make sure image pair has large enough disparity
+   *    - `max_homography_inliers`: Make sure image pair has large enough disparity
    *      for reliable pose estimation, otherwise return `false`.
    *    - `max_reproj_error`: Classify as inliers and outliers in RANSAC
    *      2D-3D pose estimation in case the image has already been processed.
