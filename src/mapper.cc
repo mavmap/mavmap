@@ -1031,6 +1031,9 @@ int main(int argc, char* argv[]) {
             break;
           }
         }
+        if (mapper->get_num_proc_images() == 0) {
+          throw std::runtime_error("Could not find good initial pair.");
+        }
       } else {
         image_idx = second_image_idx;
         if (!mapper->process_initial(first_image_idx, image_idx,
