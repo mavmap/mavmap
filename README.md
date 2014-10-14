@@ -15,6 +15,13 @@ reconstruction of the camera poses and the sparse scene geometry as output.
 More information about the internals of the reconstruction process can be found
 below.
 
+If you find this project useful, please consider citing
+
+    Schönberger, J. L., Fraundorfer, F., and Frahm, J.-M.:
+    Structure-from-motion for MAV image sequence analysis with photogrammetric applications,
+    Int. Arch. Photogramm. Remote Sens. Spatial Inf. Sci., XL-3, 305-312,
+    doi:10.5194/isprsarchives-XL-3-305-2014, 2014.
+
 
 Requirements
 ============
